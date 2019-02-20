@@ -13,6 +13,7 @@ import Html.Events exposing (..)
 type alias Model =
     { numerator : Int
     , denominator : Int
+    , error : Maybe String
     }
 
 
@@ -48,7 +49,7 @@ tryToDivide value1 value2 =
 
 init : ( Model, Cmd Msg )
 init =
-    ( { numerator = 4, denominator = 4 }, Cmd.none )
+    ( { numerator = 4, denominator = 4, error = Nothing }, Cmd.none )
 
 
 
@@ -57,7 +58,7 @@ init =
 
 type Msg
     = NoOp
-    | UpdateNumerator String
+    | UpdateDenominator String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -66,20 +67,25 @@ update msg model =
         NoOp ->
             ( model, Cmd.none )
 
-        UpdateNumerator updatedNumerator ->
+        UpdateDenominator updatedDenominator ->
             let
-                denominatorAsString =
-                    String.fromInt model.denominator
+                numeratorAsString =
+                    String.fromInt model.numerator
 
                 resultOfFn =
-                    tryToDivide updatedNumerator denominatorAsString
+                    tryToDivide numeratorAsString updatedDenominator
             in
             case resultOfFn of
                 Err err ->
-                    ( model, Cmd.none )
+                    ( { model | error = Just err }, Cmd.none )
 
-                Ok updated ->
-                    ( { model | numerator = Maybe.withDefault model.numerator <| String.toInt updatedNumerator }, Cmd.none )
+                Ok _ ->
+                    ( { model
+                        | error = Nothing
+                        , denominator = Maybe.withDefault model.denominator <| String.toInt updatedDenominator
+                      }
+                    , Cmd.none
+                    )
 
 
 
@@ -87,11 +93,20 @@ update msg model =
 
 
 view : Model -> Html Msg
-view { denominator, numerator } =
+view { denominator, numerator, error } =
     div []
         [ img [ src "/logo.svg" ] []
         , h1 [] [ text <| String.fromInt (numerator // denominator) ]
-        , input [ type_ "text", name "numerator", onInput UpdateNumerator ] []
+        , div []
+            [ text "Update Denonmiator"
+            , input [ type_ "text", onInput UpdateDenominator ] []
+            ]
+        , case error of
+            Nothing ->
+                text ""
+
+            Just e ->
+                text e
         ]
 
 
